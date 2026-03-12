@@ -66,6 +66,10 @@ The contract has **no external dependencies** (no OpenZeppelin needed). It's pur
 
 Pixels are stored in a nested mapping: `mapping(uint16 => mapping(uint16 => Pixel))`. Each pixel packs a `uint24` color and an `address` painter. Stats are tracked per-address and globally.
 
+### Polkadot Hub RPC
+
+The contract includes a `getCanvas()` view function that reads all 1,024 pixels in one call. This works in Hardhat tests but **fails on Polkadot Hub's RPC** because the node rejects `eth_call` requests that touch too many storage slots. The frontend works around this by reconstructing the canvas from `PixelPlaced` event logs using `eth_getLogs`, which is fully supported. If you're building your own dApp on Polkadot Hub, keep this in mind: avoid view functions that do large batch reads, and prefer events for loading historical state.
+
 ## Step 3: Compile and Test
 
 ```bash
@@ -235,13 +239,15 @@ polkadot-pixel-canvas/
 
 **"Cooldown active"**: Wait 30 seconds between pixel placements.
 
-**Frontend shows blank canvas**: Make sure you pasted the correct contract address in `frontend/src/config/contract.ts`.
+**Frontend shows blank canvas**: Check the browser console. If you see `CALL_EXCEPTION` errors, the contract address in `frontend/src/config/contract.ts` may be wrong, or the contract isn't deployed on the network you're connected to.
 
-**Tests use `evm_increaseTime`**: These work on Hardhat's local network. On the real Polkadot Hub testnet, the cooldown is enforced by actual block timestamps.
-
-## Why Polkadot Hub?
+**Tests use `evm_increaseTime`**: These work on Hardhat's local network. On the real Polkadot Hub testnet, the cool down is enforced by actual block timestamps.
 
 Polkadot Hub runs a full EVM (via Revive/REVM), so standard Solidity contracts, Hardhat, MetaMask, and ethers.js all work out of the box. You get the Ethereum developer experience plus Polkadot's interoperability, shared security, and cross-chain messaging (XCM).
+
+To see the complete list of RPC calls supported, check out: [JSON-RPC APIs](https://docs.polkadot.com/smart-contracts/for-eth-devs/json-rpc-apis/)
+
+For full details, see the [Polkadot Hub docs for Ethereum developers](https://docs.polkadot.com/smart-contracts/for-eth-devs/).
 
 ## License
 
