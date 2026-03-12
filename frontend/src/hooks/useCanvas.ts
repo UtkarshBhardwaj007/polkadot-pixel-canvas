@@ -60,13 +60,43 @@ export function useCanvas() {
 
   const loadCanvas = useCallback(async () => {
     try {
-      const contract = contractRef.current || getReadOnlyContract();
-      const [colors, total] = await Promise.all([
-        contract.getCanvas(),
-        contract.totalPixelsPlaced(),
+      const readOnly = getReadOnlyContract();
+      const provider = readOnly.runner?.provider as ethers.JsonRpcProvider;
+
+      const [totalBig, currentBlock] = await Promise.all([
+        readOnly.totalPixelsPlaced(),
+        provider.getBlockNumber(),
       ]);
-      const pixels = Array.from(colors as bigint[], (c) => Number(c));
-      update({ pixels, totalPlaced: Number(total) });
+
+      const events = await readOnly.queryFilter(
+        "PixelPlaced",
+        0,
+        currentBlock
+      );
+
+      const pixels = new Array(CANVAS_SIZE * CANVAS_SIZE).fill(0);
+      const recentEvents: PixelEvent[] = [];
+
+      for (const evt of events) {
+        const log = evt as ethers.EventLog;
+        const [painter, x, y, color, timestamp] = log.args;
+        const px = Number(x);
+        const py = Number(y);
+        pixels[py * CANVAS_SIZE + px] = Number(color);
+        recentEvents.push({
+          painter,
+          x: px,
+          y: py,
+          color: Number(color),
+          timestamp: Number(timestamp),
+        });
+      }
+
+      update({
+        pixels,
+        totalPlaced: Number(totalBig),
+        recentEvents: recentEvents.reverse().slice(0, 20),
+      });
     } catch (err) {
       console.warn("Failed to load canvas:", err);
     }
@@ -275,18 +305,9 @@ export function useCanvas() {
     };
   }, []);
 
-  // Load canvas on mount, retry once after 3s if initial load gets empty data
+  // Load canvas on mount
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      await loadCanvas();
-      // If canvas is still all zeros after first attempt, retry after a delay
-      setTimeout(() => {
-        if (!cancelled) loadCanvas();
-      }, 3000);
-    };
-    load();
-    return () => { cancelled = true; };
+    loadCanvas();
   }, [loadCanvas]);
 
   // Handle account changes from MetaMask
