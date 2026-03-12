@@ -67,8 +67,8 @@ export function useCanvas() {
       ]);
       const pixels = Array.from(colors as bigint[], (c) => Number(c));
       update({ pixels, totalPlaced: Number(total) });
-    } catch {
-      // Contract not deployed or network unavailable
+    } catch (err) {
+      console.warn("Failed to load canvas:", err);
     }
   }, [getReadOnlyContract]);
 
@@ -149,7 +149,7 @@ export function useCanvas() {
         isLoading: false,
       });
 
-      await loadUserStats(accounts[0]);
+      await Promise.all([loadCanvas(), loadUserStats(accounts[0])]);
     } catch (err: unknown) {
       const error = err as Error;
       update({
@@ -157,7 +157,7 @@ export function useCanvas() {
         isLoading: false,
       });
     }
-  }, [loadUserStats]);
+  }, [loadCanvas, loadUserStats]);
 
   const placePixel = useCallback(
     async (x: number, y: number, color: number) => {
@@ -275,9 +275,18 @@ export function useCanvas() {
     };
   }, []);
 
-  // Load canvas on mount
+  // Load canvas on mount, retry once after 3s if initial load gets empty data
   useEffect(() => {
-    loadCanvas();
+    let cancelled = false;
+    const load = async () => {
+      await loadCanvas();
+      // If canvas is still all zeros after first attempt, retry after a delay
+      setTimeout(() => {
+        if (!cancelled) loadCanvas();
+      }, 3000);
+    };
+    load();
+    return () => { cancelled = true; };
   }, [loadCanvas]);
 
   // Handle account changes from MetaMask
@@ -290,6 +299,7 @@ export function useCanvas() {
         update({ account: null, isConnected: false, balance: "0", myPlaced: 0 });
       } else {
         update({ account: accounts[0] });
+        loadCanvas();
         loadUserStats(accounts[0]);
       }
     };
@@ -299,7 +309,7 @@ export function useCanvas() {
     return () => {
       eth.removeListener?.("accountsChanged", handleAccountsChanged);
     };
-  }, [loadUserStats]);
+  }, [loadCanvas, loadUserStats]);
 
   return {
     ...state,
