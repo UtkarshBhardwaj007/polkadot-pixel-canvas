@@ -13,10 +13,15 @@ PixelCanvas solves this by putting the entire canvas on-chain. Every pixel place
 
 The 30-second cooldown per address ensures fair participation and prevents any single user from dominating the canvas.
 
-## Live Deployment
+## Live Demo
+
+**Try it now: [polkadot-pixel-canvas.vercel.app](https://polkadot-pixel-canvas.vercel.app/)**
+
+Connect your MetaMask, pick a color, and place a pixel. All you need is some testnet PAS tokens from the [faucet](https://faucet.polkadot.io/).
 
 | | |
 |---|---|
+| **Live App** | [polkadot-pixel-canvas.vercel.app](https://polkadot-pixel-canvas.vercel.app/) |
 | **Contract Address** | [`0x302a2322A1c928786bBfFb5088CC1c0091fF00E9`](https://blockscout-testnet.polkadot.io/address/0x302a2322A1c928786bBfFb5088CC1c0091fF00E9#code) |
 | **Network** | Polkadot Hub Testnet (Chain ID: 420420417) |
 | **Explorer** | [View on Blockscout](https://blockscout-testnet.polkadot.io/address/0x302a2322A1c928786bBfFb5088CC1c0091fF00E9#code) |
